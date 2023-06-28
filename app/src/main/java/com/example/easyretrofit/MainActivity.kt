@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 open class BaseActivity : AppCompatActivity() {
     protected fun <T> registerAction(liveData: LiveData<Result<T>>, block: (T) -> Unit) {
         liveData.observe(this) {
+            LogUtils.d(it)
             CommonUtil.handleResult(it, block)
         }
     }
@@ -65,7 +66,14 @@ class MyViewModel : ViewModel() {
         /*viewModelScope.launch {
             try {
                 val data = API.mApiService.getList()
-                _testLiveData.value = Result.Success(data.data)
+                // 注意：
+                // 1. 这里必须要用 data.data!!，因为 Gson 转换为 BaseData 实体的时候，
+                // data 成员可能为 null，导致在 handleResult() 中取 data 成员时取到的为 null，
+                // 导致空指针异常。
+                // 2. 这里生成 Result.Success 的实例时，虽然传了 null 但是也没报错，
+                // 因为参数的泛型 T，所以允许传 null。
+                // 3. 使用了 data.data!! 时，如果 data.data 为 null，这里就会报错了，会被 catch
+                _testLiveData.postValue(Result.Success(data.data!!))
                 if (data.code != 200) {
                     ToastUtils.showShort(data.message)
                 }
@@ -116,13 +124,13 @@ object CommonUtil {
         viewModelScope: CoroutineScope,
         block: suspend () -> BaseData<T>
     ) {
-        liveData.value = Result.Loading
+        liveData.postValue(Result.Loading)
         viewModelScope.launch {
             try {
                 // TODO show block().message if block().code!=200
-                liveData.value = Result.Success(block().data)
+                liveData.postValue(Result.Success(block().data!!))
             } catch (e: Exception) {
-                liveData.value = Result.Error(e)
+                liveData.postValue(Result.Error(e))
                 ToastUtils.showShort("请求失败，请稍后重试")
             }
         }
@@ -153,6 +161,13 @@ class MockInterceptor : Interceptor {
                         0,
                         1
                     ],
+                    "message": "success"
+                }
+            """
+        private const val NULL_JSON = """
+                {
+                    "code": 200,
+                    "data": null,
                     "message": "success"
                 }
             """
