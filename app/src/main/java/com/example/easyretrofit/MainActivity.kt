@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import okhttp3.*
 import retrofit2.Retrofit
@@ -61,7 +62,7 @@ class MyViewModel : ViewModel() {
     val testLiveData: LiveData<Result<List<Int>>> = _testLiveData
 
     fun getList() {
-        viewModelScope.launch {
+        /*viewModelScope.launch {
             try {
                 val data = API.mApiService.getList()
                 _testLiveData.value = Result.Success(data.data)
@@ -72,6 +73,10 @@ class MyViewModel : ViewModel() {
                 LogUtils.d(e)
                 ToastUtils.showShort("请求失败，请稍后重试")
             }
+        }*/
+
+        CommonUtil.handleApi(_testLiveData, viewModelScope) {
+            API.mApiService.getList()
         }
     }
 }
@@ -106,13 +111,19 @@ interface ApiService {
 
 object CommonUtil {
     // 在 ViewModel 中调用
-    fun <T> handleApi(liveData: MutableLiveData<Result<T>>, block: () -> Result<T>) {
+    fun <T> handleApi(
+        liveData: MutableLiveData<Result<T>>,
+        viewModelScope: CoroutineScope,
+        block: suspend () -> BaseData<T>
+    ) {
         liveData.value = Result.Loading
-        try {
-            liveData.value = block()
-        } catch (e: Exception) {
-            liveData.value = Result.Error(e)
-            ToastUtils.showShort(e.message)
+        viewModelScope.launch {
+            try {
+                liveData.value = Result.Success(block().data)
+            } catch (e: Exception) {
+                liveData.value = Result.Error(e)
+                ToastUtils.showShort("请求失败，请稍后重试")
+            }
         }
     }
 
@@ -128,15 +139,11 @@ data class BaseData<T>(val code: Int, val message: String, val data: T)
 
 sealed class Result<out R> {
     object Loading : Result<Nothing>()
-
     class Success<out T>(val result: T) : Result<T>()
-
-    // class Success<T>(val result: BaseData<T>) : Result<T>()
     class Error(val exception: Exception) : Result<Nothing>()
 }
 
 class MockInterceptor : Interceptor {
-
     companion object {
         private const val DATA_JSON = """
                 {
@@ -170,5 +177,4 @@ class MockInterceptor : Interceptor {
             }
         }
     }
-
 }
