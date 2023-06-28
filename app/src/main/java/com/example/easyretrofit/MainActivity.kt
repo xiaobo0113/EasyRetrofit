@@ -119,6 +119,7 @@ object CommonUtil {
         liveData.value = Result.Loading
         viewModelScope.launch {
             try {
+                // TODO show block().message if block().code!=200
                 liveData.value = Result.Success(block().data)
             } catch (e: Exception) {
                 liveData.value = Result.Error(e)
