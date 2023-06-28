@@ -127,8 +127,14 @@ object CommonUtil {
         liveData.postValue(Result.Loading)
         viewModelScope.launch {
             try {
-                // TODO show block().message if block().code!=200
-                liveData.postValue(Result.Success(block().data!!))
+                // show message if code!=200
+                val response = block()
+                if (response.code != 200) {
+                    ToastUtils.showShort(response.message)
+                }
+
+                // 使用 data!! 来确保 data 不会为 null
+                liveData.postValue(Result.Success(response.data!!))
             } catch (e: Exception) {
                 liveData.postValue(Result.Error(e))
                 ToastUtils.showShort("请求失败，请稍后重试")
