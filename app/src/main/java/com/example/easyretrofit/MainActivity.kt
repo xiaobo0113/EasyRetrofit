@@ -11,16 +11,19 @@ import androidx.lifecycle.viewModelScope
 import com.blankj.utilcode.util.LogUtils
 import com.blankj.utilcode.util.ToastUtils
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.*
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.POST
+import top.gangshanghua.lib_loading.LoadingActivity
 import java.util.concurrent.TimeUnit
 
-open class BaseActivity : AppCompatActivity() {
+open class BaseActivity : LoadingActivity() {
     protected fun <T> registerAction(
         liveData: LiveData<Result<T>>,
+        autoLoading: Boolean = false,
         loadingBlock: () -> Unit = {},
         errorBlock: (Result.Error) -> Unit = {},
         successBlock: (T) -> Unit
@@ -29,8 +32,20 @@ open class BaseActivity : AppCompatActivity() {
             LogUtils.d(it)
 
             when (it) {
-                is Result.Loading -> loadingBlock()
-                is Result.Error -> errorBlock(it)
+                is Result.Loading -> {
+                    loadingBlock()
+                    if (autoLoading) {
+                        handleLoading(true)
+                    }
+                }
+
+                is Result.Error -> {
+                    errorBlock(it)
+                    if (autoLoading) {
+                        handleLoading(false)
+                    }
+                }
+
                 is Result.Success -> {
                     // 通常 DataBean 中的成员都声明为非空，这里如果出现了 NPE 那一定是服务端返回的 null
                     try {
@@ -38,6 +53,10 @@ open class BaseActivity : AppCompatActivity() {
                     } catch (e: NullPointerException) {
                         LogUtils.d(e)
                         ToastUtils.showShort("请求失败，请稍后重试")
+                    }
+
+                    if (autoLoading) {
+                        handleLoading(false)
                     }
                 }
             }
@@ -58,12 +77,12 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initApi() {
-        registerAction(viewModel.testLiveData) {
+        registerAction(viewModel.testLiveData, true) {
             // update ui
             LogUtils.d(it)
         }
 
-        registerAction(viewModel.testLiveData, {
+        registerAction(viewModel.testLiveData, true, {
             // show loading
         }, {
             // stop loading + show error
