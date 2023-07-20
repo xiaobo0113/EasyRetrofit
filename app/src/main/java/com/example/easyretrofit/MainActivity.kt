@@ -22,7 +22,10 @@ class MainActivity : BaseActivity() {
             LogUtils.d(it)
         }
 
-        registerAction(viewModel.testLiveData, { true }, {
+        registerAction(viewModel.testLiveData, {
+            // show loading
+            true
+        }, {
             // stop loading + show error
         }) {
             // stop loading + update ui
