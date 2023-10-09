@@ -10,10 +10,12 @@ open class BaseActivity : LoadingActivity() {
 
     protected fun <T> registerAction(
         liveData: LiveData<Result<T>>,
+        // if false, show loading automatically
         loadingBlock: () -> Boolean = { false },
         errorBlock: (Result.Error) -> Unit = {},
         successBlock: (T) -> Unit
     ) {
+        // if not handled by user, show loading automatically
         var loadingHandled = false
         liveData.observe(this) {
             LogUtils.d(it)

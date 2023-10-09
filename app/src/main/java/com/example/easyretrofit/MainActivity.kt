@@ -23,12 +23,15 @@ class MainActivity : BaseActivity() {
         }
 
         registerAction(viewModel.testLiveData, {
-            // show loading
+            // return true means: handle loading myself
+            // handleLoading(true)
             true
         }, {
             // stop loading + show error
+            // handleLoading(false)
         }) {
             // stop loading + update ui
+            // handleLoading(false)
             LogUtils.d(it)
         }
     }
