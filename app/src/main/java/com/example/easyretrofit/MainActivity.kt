@@ -17,11 +17,14 @@ class MainActivity : BaseActivity() {
     }
 
     private fun initApi() {
+        // 方式 1
         registerAction(viewModel.testLiveData) {
             // update ui
             LogUtils.d(it)
         }
 
+        // 方式 2，为了展示两种使用方式，特意写了两种调用方式，
+        // 实际使用时不要对同一个 LiveData 对象使用两次，否则会同时收到回调
         registerAction(viewModel.testLiveData, {
             // return true means: handle loading myself
             // handleLoading(true)
